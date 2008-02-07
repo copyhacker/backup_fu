@@ -1,0 +1,141 @@
+BackupFu
+========
+
+The backup_fu plugin makes it redonkulous easy to:
+
+ A) dump your database and/or static files to tar/gzipped archives, and
+ B) upload these archives to a private Amazon S3 bucket for safekeeping
+
+Installation
+============
+
+The 'aws-s3' gem is required for backup_fu to function properly.  Install with:
+
+  sudo gem install aws-s3
+
+
+Configuration
+=============
+
+Run the following to copy over the example backup_fu.yml config file:
+
+  rake backup_fu:setup
+
+This copies the example config file to: config/backup_fu.yml.
+
+Usage
+=====
+
+For the list of available rake tasks:
+
+  rake -T backup_fu
+
+Backing up your database:
+
+  rake backup
+
+Dumping your database:
+
+  rake backup_fu:dump
+
+Backing up your static files:
+
+  rake backup_fu:static
+
+Backing up both your database + static files:
+
+  rake backup_fu:all
+
+Advanced Configuration
+======================
+
+See vendor/plugins/backup_fu/config/backup_fu.yml.advanced_example for
+the list of advanced configuration options.
+
+Advanced options include:
+* specify static path(s) that should be backed up -- i.e. backup your entire 'public/static' directory
+* change default dump path from RAILS_ROOT/tmp/backup to whatever
+* specify fully-qualified 'mysqldump' path
+* disable tar/gzipping of database dump
+* enable 'nice' with level specification to prevent backup_fu from bogarding your server
+
+Cronjob Installation
+====================
+
+Here are some cron job examples.
+
+	# Backup just the database everyday at 1am
+	0 1 * * * cd /apps/foo/current; RAILS_ENV=production rake backup > /dev/null
+
+  # Backup db + static @ 2am every 3 days, log the results to ~/backup.log (verbosity should be turned on if logging results)
+  0 2 1-31/3  * * cd /u/apps/shanti.railsblog/current; RAILS_ENV=production rake backup_fu:all >> ~/backup.log
+
+
+Debugging
+=========
+
+--- Enabling Verbosity
+
+If you are experiencing any difficulties, the first thing you should do is enable verbosity by
+dropping this into config/backup_fu.yml:
+
+  verbose: true
+	
+--- Mysqldump Issues
+
+If your 'mysqldump' command is not in your path, you will need to specify it explicitly.
+
+To see if mysqldump is in your path, execute:
+
+  which mysqldump
+
+If you see output like "/usr/bin/which: no mysqldump in (...)" then you will need to specify the path manually.
+
+Use 'locate mysqldump' or a similar tool to find the full path to your mysqldump utility.
+
+Place an entry like the following in your config/backup_fu.yml file:
+
+  mysqldump_path: /usr/local/mysql-standard-5.0.27-linux-i686/bin/mysqldump
+
+--- Database Connection Issues
+
+If you are seeing an error when running 'rake backup' like:
+
+  mysqldump: Got error: 2002: Can't connect to local MySQL server ...
+
+Make sure you are specifying the RAILS_ENV for the target environment.  i.e. for production:
+
+  RAILS_ENV=production rake backup
+  or
+  rake backup RAILS_ENV=production
+
+--- Connection reset by peer
+
+When backing up, if you receive an error like:
+
+  rake aborted!
+  Connection reset by peer
+
+Chances are this is because your backup is huuge.  There is currently no great solution for
+this problem.
+
+On some systems, I have backed up 4GB+ files without a hitch.  On other machines, an 80mb
+backup was choking on the S3 upload.  After 3 attempts it went through.
+
+Patching in some kind of email notification system on failure would probably be nice.
+
+Patches welcome =)
+
+--- Tiny Static file .tar.gz Archive (static files not actually getting archived)
+
+This may result if you are using a symlink for your static dir, such as:
+
+  public/static -> /shared/apps/foo/static
+
+The solution to this is to specify the absolute static path in config/backup_fu.yml:
+ 
+  static_paths: /shared/apps/foo/static
+
+
+
+Copyright (c) 2008 Shanti A. Braford, released under the MIT license
