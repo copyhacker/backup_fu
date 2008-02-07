@@ -1,7 +1,7 @@
 BackupFu
 ========
 
-The backup_fu plugin makes it redonkulous easy to:
+The backup_fu plugin makes it redonkulously easy to:
 
  A) dump your database and/or static files to tar/gzipped archives, and
  B) upload these archives to a private Amazon S3 bucket for safekeeping
