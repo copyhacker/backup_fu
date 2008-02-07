@@ -40,7 +40,7 @@ Dumping your database:
 
 Backing up your static files:
 
-  rake backup_fu:static
+  rake backup_fu:static:backup
 
 Backing up both your database + static files:
 
