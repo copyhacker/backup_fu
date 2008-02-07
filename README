@@ -13,6 +13,10 @@ The 'aws-s3' gem is required for backup_fu to function properly.  Install with:
 
   sudo gem install aws-s3
 
+Install the plugin with:
+
+  ruby script/plugin install http://backup-fu.googlecode.com/svn/backup_fu/
+
 
 Configuration
 =============
