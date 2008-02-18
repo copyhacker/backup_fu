@@ -7,11 +7,11 @@ class S3ConnectError < StandardError; end
 
 class BackupFu
   
-  def initialize(period = 'daily')
-    @period = period
+  def initialize
     db_conf = YAML.load_file(File.join(RAILS_ROOT, 'config', 'database.yml')) 
     @db_conf = db_conf[RAILS_ENV].symbolize_keys
     @fu_conf = YAML.load_file(File.join(RAILS_ROOT, 'config', 'backup_fu.yml')).symbolize_keys
+    @fu_conf[:mysqldump_options] ||= '--complete-insert --skip-extended-insert'
     @verbose = !@fu_conf[:verbose].nil?
     check_conf
     create_dirs
@@ -29,7 +29,12 @@ class BackupFu
       password = "--password=#{@db_conf[:password]}"
     end
     full_dump_path = File.join(dump_base_path, db_filename)
-    cmd = niceify "#{mysqldump_path} --complete-insert --skip-extended-insert #{host} #{port} --user=#{@db_conf[:username]} #{password} #{@db_conf[:database]} > #{full_dump_path}"
+    case @db_conf[:adapter]
+    when 'postgresql'
+      cmd = niceify "PGPASSWORD=#{password} #{dump_path} --user=#{@db_conf[:username]} --host=#{host} --port=#{port} #{@db_conf[:database]} > #{full_dump_path}"
+    when 'mysql'
+      cmd = niceify "#{dump_path} #{@fu_conf[:mysqldump_options]} #{host} #{port} --user=#{@db_conf[:username]} #{password} #{@db_conf[:database]} > #{full_dump_path}"
+    end
     puts cmd if @verbose
     `#{cmd}`
 
@@ -125,13 +130,21 @@ class BackupFu
       raise BackupFuConfigError, 'Application name (app_name) key not set in config/backup_fu.yml.'
     elsif @fu_conf[:s3_bucket] == 'some-s3-bucket'
       raise BackupFuConfigError, 'S3 bucket (s3_bucket) not set in config/backup_fu.yml.  This bucket must be created using an external S3 tool like S3 Browser for OS X, or JetS3t (Java-based, cross-platform).'
-    elsif @fu_conf[:aws_access_key_id].include?('--replace me') || @fu_conf[:aws_secret_access_key].include?('--replace me')
-      raise BackupFuConfigError, 'AWS Access Key Id or AWS Secret Key not set in config/backup_fu.yml.'
+    else
+      # Check for access keys set as environment variables:
+      if ENV.keys.include?('AMAZON_ACCESS_KEY_ID') && ENV.keys.include?('AMAZON_SECRET_ACCESS_KEY')
+        @fu_conf[:aws_access_key_id] = ENV['AMAZON_ACCESS_KEY_ID']
+        @fu_conf[:aws_secret_access_key] = ENV['AMAZON_SECRET_ACCESS_KEY']
+      elsif @fu_conf[:aws_access_key_id].include?('--replace me') || @fu_conf[:aws_secret_access_key].include?('--replace me')
+        raise BackupFuConfigError, 'AWS Access Key Id or AWS Secret Key not set in config/backup_fu.yml.'
+      end
     end
   end
   
-  def mysqldump_path
-    @fu_conf[:mysqldump_path] || 'mysqldump'
+  def dump_path
+    dump = {:postgresql => 'pg_dump',:mysql => 'mysqldump'}
+    # Note: the 'mysqldump_path' config option is DEPRECATED but keeping this in for legacy config file support
+    @fu_conf[:mysqldump_path] || @fu_conf[:dump_path] || dump[@db_conf[:adapter].intern]
   end
   
   def dump_base_path

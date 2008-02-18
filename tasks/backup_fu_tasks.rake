@@ -51,7 +51,7 @@ namespace :backup_fu do
       b.dump_static
     end
     
-    desc "Backups up static files to Amazon S3. For configuration see the backup_fo README."
+    desc "Backups up static files to Amazon S3. For configuration see the backup_fu README."
     task :backup do
       b = BackupFu.new
       b.backup_static

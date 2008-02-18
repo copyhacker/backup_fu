@@ -11,7 +11,10 @@ aws_secret_access_key: --replace me with your AWS secret access key--
 verbose: true
 
 # If the user running the script cannot find 'mysqldump' in its path, specify the full path with:
-mysqldump_path: /usr/local/mysql/bin/mysqldump
+dump_path: /usr/local/mysql/bin/mysqldump
+
+# To specify your own options for mysqldump. Default is: "--complete-insert --skip-extended-insert"
+mysqldump_options: --single-transaction --flush-logs --add-drop-table --add-locks --create-options --disable-keys --extended-insert --quick
 
 # Enable the ability to backup your application's static files with the 'static_paths' config key.
 #  Specify either relative (to RAILS_ROOT) paths (space-delimited)
