@@ -10,7 +10,8 @@ class BackupFu
   def initialize
     db_conf = YAML.load_file(File.join(RAILS_ROOT, 'config', 'database.yml')) 
     @db_conf = db_conf[RAILS_ENV].symbolize_keys
-    @fu_conf = YAML.load_file(File.join(RAILS_ROOT, 'config', 'backup_fu.yml')).symbolize_keys
+    fu_conf = YAML.load_file(File.join(RAILS_ROOT, 'config', 'backup_fu.yml'))
+    @fu_conf = fu_conf[RAILS_ENV].symbolize_keys
     @fu_conf[:mysqldump_options] ||= '--complete-insert --skip-extended-insert'
     @verbose = !@fu_conf[:verbose].nil?
     check_conf
