@@ -14,6 +14,7 @@ class BackupFu
     @fu_conf = fu_conf[RAILS_ENV].symbolize_keys
     @fu_conf[:mysqldump_options] ||= '--complete-insert --skip-extended-insert'
     @verbose = !@fu_conf[:verbose].nil?
+    @fu_conf[:keep_backups] ||= 5
     check_conf
     create_dirs
   end
@@ -112,6 +113,24 @@ class BackupFu
     
     AWS::S3::S3Object.store(File.basename(file), open(file), @fu_conf[:s3_bucket], :access => :private)
     
+  end
+  
+  def cleanup
+    count = @fu_conf[:keep_backups].to_i
+    backups = Dir.glob("#{dump_base_path}/*.{sql}")
+    if count >= backups.length
+      puts "no old backups to cleanup"
+    else
+      puts "keeping #{count} of #{backups.length} backups"
+      
+      files_to_remove = backups - backups.last(count)
+      files_to_remove = files_to_remove.concat(Dir.glob("#{dump_base_path}/*.{gz}")[0, files_to_remove.length]) unless @fu_conf[:disable_tar_gzip]
+      
+      files_to_remove.each do |f|
+        File.delete(f)
+      end
+      
+    end
   end
   
   private
