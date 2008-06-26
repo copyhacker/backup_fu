@@ -43,6 +43,12 @@ namespace :backup_fu do
     b.backup_static
   end
   
+  desc "Clean up old backups. By default 5 backups are kept (you can change this with with keep_backups key in config/backup_fu.yml)."
+  task :cleanup do
+    b = BackupFu.new
+    b.cleanup
+  end
+  
   namespace :static do
 
     desc "Tars and gzips static application files locally.  Does *not* upload to S3."
