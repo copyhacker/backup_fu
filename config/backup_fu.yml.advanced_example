@@ -32,3 +32,6 @@ disable_tar_gzip: true
 # To turn on using 'nice' to keep backup CPU processing to a minimum:
 enable_nice: true
 nice_level: 15
+
+# Set the number of most recent backups to keep when running the cleanup task
+keep_backups: 10
