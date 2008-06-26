@@ -14,6 +14,7 @@ class BackupFu
     @fu_conf = fu_conf[RAILS_ENV].symbolize_keys
     @fu_conf[:mysqldump_options] ||= '--complete-insert --skip-extended-insert'
     @verbose = !@fu_conf[:verbose].nil?
+    @timestamp = datetime_formatted
     check_conf
     create_dirs
   end
@@ -153,8 +154,7 @@ class BackupFu
   end
   
   def db_filename
-    date_formatted = Time.now.strftime("%Y-%m-%d")
-    "#{@fu_conf[:app_name]}_#{date_formatted}_db.sql"
+    "#{@fu_conf[:app_name]}_#{ @timestamp }_db.sql"
   end
   
   def db_filename_tarred
@@ -171,14 +171,12 @@ class BackupFu
   end
   
   def static_tar_path
-    date_formatted = Time.now.strftime("%Y-%m-%d")
-    f = "#{@fu_conf[:app_name]}_#{date_formatted}_static.tar"
+    f = "#{@fu_conf[:app_name]}_#{ @timestamp }_static.tar"
     File.join(dump_base_path, f)
   end
   
   def final_static_dump_path
-    date_formatted = Time.now.strftime("%Y-%m-%d")
-    f = "#{@fu_conf[:app_name]}_#{date_formatted}_static.tar.gz"
+    f = "#{@fu_conf[:app_name]}_#{ @timestamp }_static.tar.gz"
     File.join(dump_base_path, f)
   end
   
@@ -197,6 +195,9 @@ class BackupFu
       cmd
     end
   end
-  
+
+  def datetime_formatted
+    Time.now.strftime("%Y-%m-%d") + "_#{ Time.now.tv_sec }"
+  end
   
 end
