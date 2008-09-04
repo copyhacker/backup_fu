@@ -7,6 +7,14 @@ aws_secret_access_key: --replace me with your AWS secret access key--
 
 # Advanced customizations
 
+# Use dynamic bucket path  with erb
+s3_bucket: <%=  %>
+
+backup and compress all app files w/o log/* and tmp/* dirs
+[config sample]
+
+added support of sqlite
+
 # Turn on verbose output for debugging purposes:
 verbose: true
 

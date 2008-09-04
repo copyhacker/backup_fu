@@ -1,6 +1,8 @@
 require 'yaml'
 require 'active_support'
-require 'aws/s3'
+require 'mime/types'
+require 'right_aws'
+require 'erb'
 
 class BackupFuConfigError < StandardError; end
 class S3ConnectError < StandardError; end
@@ -10,8 +12,12 @@ class BackupFu
   def initialize
     db_conf = YAML.load_file(File.join(RAILS_ROOT, 'config', 'database.yml')) 
     @db_conf = db_conf[RAILS_ENV].symbolize_keys
-    fu_conf = YAML.load_file(File.join(RAILS_ROOT, 'config', 'backup_fu.yml'))
-    @fu_conf = fu_conf[RAILS_ENV].symbolize_keys
+    
+    raw_config = File.read(File.join(RAILS_ROOT, 'config', 'backup_fu.yml'))
+    erb_config = ERB.new(raw_config).result 
+    fu_conf    = YAML.load(erb_config)
+    @fu_conf   = fu_conf[RAILS_ENV].symbolize_keys
+    
     @fu_conf[:mysqldump_options] ||= '--complete-insert --skip-extended-insert'
     @verbose = !@fu_conf[:verbose].nil?
     @timestamp = datetime_formatted
@@ -31,28 +37,30 @@ class BackupFu
     if @db_conf.has_key?(:password) && !@db_conf[:password].blank?
       password = "--password=#{@db_conf[:password]}"
     end
+    
     full_dump_path = File.join(dump_base_path, db_filename)
     case @db_conf[:adapter]
-    when 'postgresql'
-      cmd = niceify "PGPASSWORD=#{password} #{dump_path} --user=#{@db_conf[:username]} --host=#{host} --port=#{port} #{@db_conf[:database]} > #{full_dump_path}"
-    when 'mysql'
-      cmd = niceify "#{dump_path} #{@fu_conf[:mysqldump_options]} #{host} #{port} --user=#{@db_conf[:username]} #{password} #{@db_conf[:database]} > #{full_dump_path}"
+      when 'postgresql'
+        cmd = niceify "PGPASSWORD=#{password} #{dump_path} --user=#{@db_conf[:username]} --host=#{host} --port=#{port} #{@db_conf[:database]} > #{full_dump_path}"
+      when 'mysql'
+        cmd = niceify "#{dump_path} #{@fu_conf[:mysqldump_options]} #{host} #{port} --user=#{@db_conf[:username]} #{password} #{@db_conf[:database]} > #{full_dump_path}"
     end
     puts cmd if @verbose
     `#{cmd}`
 
-    compress_db(dump_base_path, db_filename) if !@fu_conf[:disable_compression]
+    if !@fu_conf[:disable_compression]
+      compress_db(dump_base_path, db_filename) 
+      File.unlink full_dump_path
+    end
   end
-  
+
   def backup
     dump
-    establish_s3_connection
     
     file = final_db_dump_path()
     puts "\nBacking up to S3: #{file}\n" if @verbose
     
-    AWS::S3::S3Object.store(File.basename(file), open(file), @fu_conf[:s3_bucket], :access => :private)
-    
+    store_file(file)
   end
   
   ## Static-file Dump/Backup methods
@@ -67,12 +75,11 @@ class BackupFu
   
   def backup_static
     dump_static
-    establish_s3_connection
     
     file = final_static_dump_path()
     puts "\nBacking up Static files to S3: #{file}\n" if @verbose
     
-    AWS::S3::S3Object.store(File.basename(file), open(file), @fu_conf[:s3_bucket], :access => :private)
+    store_file(file)
   end
 
   def cleanup
@@ -102,14 +109,19 @@ class BackupFu
   
   private
   
-  def establish_s3_connection
-    unless AWS::S3::Base.connected?
-      AWS::S3::Base.establish_connection!(
-        :access_key_id => @fu_conf[:aws_access_key_id],
-        :secret_access_key => @fu_conf[:aws_secret_access_key]
-      )
-    end
-    raise S3ConnectError, "\nERROR: Connection to Amazon S3 failed." unless AWS::S3::Base.connected?
+  def s3
+    @s3 ||= RightAws::S3.new(@fu_conf[:aws_access_key_id],
+                             @fu_conf[:aws_secret_access_key])
+  end
+  
+  def s3_bucket
+    @s3_bucket ||= s3.bucket(@fu_conf[:s3_bucket], true, 'private')
+  end
+  
+  def store_file(file)
+    key = s3_bucket.key(File.basename(file))
+    key.data = open(file)
+    key.put(nil, 'private')
   end
   
   def check_conf
@@ -263,6 +275,18 @@ class BackupFu
       "-P #{@fu_conf[:zip_password]}"
     else
       ''
+    end
+  end
+
+  def skips
+    return '' unless @fu_conf[:skips]
+
+    raise BackupFuConfigError, 'skip option is not array or string' unless @fu_conf[:skips].kind_of?(Array) || @fu_conf[:skips].kind_of?(String)
+
+    if @fu_conf[:skips].kind_of?(Array)
+      @fu_conf[:skips].collect{|skip| " --exclude=#{skip} " }.join
+    else
+      @fu_conf[:skips]
     end
   end
 end
