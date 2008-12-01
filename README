@@ -15,7 +15,7 @@ The 'aws-s3' gem is required for backup_fu to function properly.  Install with:
 
 Install the plugin with:
 
-  ruby script/plugin install http://backup-fu.googlecode.com/svn/backup_fu/
+  script/plugin install git://github.com/gravelpup/backup_fu.git
 
 
 Configuration
