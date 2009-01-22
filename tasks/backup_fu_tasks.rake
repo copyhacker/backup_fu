@@ -49,6 +49,25 @@ namespace :backup_fu do
     b.cleanup
   end
   
+  desc "List backups in S3"
+  task :s3_backups do
+    b = BackupFu.new
+    backups = b.list_backups
+    pp backups
+  end
+
+  desc "Pull a backup file from S3 and overwrite the database with it"
+  task :restore do
+    b = BackupFu.new
+    backup_file = ENV['BACKUP_FILE']
+    if backup_file.blank?
+      puts "You need to specify a backup file to restore.  Usage:"
+      puts "BACKUP_FILE=myapp_1999-12-31_12345679_db.tar.gz rake backup_fu:restore"
+    else
+      b.restore_backup(backup_file)
+    end
+  end
+
   namespace :static do
 
     desc "Tars and gzips static application files locally.  Does *not* upload to S3."
