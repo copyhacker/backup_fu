@@ -6,6 +6,11 @@ The backup_fu plugin makes it redonkulously easy to:
  A) dump your database and/or static files to tar/gzipped archives, and
  B) upload these archives to a private Amazon S3 bucket for safekeeping
 
+This fork of the project allows backup and restore of PostgreSQL databases,
+and is known to work on the Morph AppSpace platform.
+
+It also uses credentials in config/amazon_s3.yml if not supplied in backup_fu.yml
+
 Installation
 ============
 
@@ -15,7 +20,7 @@ The 'aws-s3' gem is required for backup_fu to function properly.  Install with:
 
 Install the plugin with:
 
-  script/plugin install git://github.com/gravelpup/backup_fu.git
+  script/plugin install git://github.com/cluesque/backup_fu.git
 
 
 Configuration
@@ -50,6 +55,9 @@ Backing up both your database + static files:
 
   rake backup_fu:all
 
+Restoring from S3:
+  BACKUP_FILE=myapp_1999-12-31_12345679_db.tar.gz rake backup_fu:restore
+  
 Advanced Configuration
 ======================
 
@@ -61,7 +69,7 @@ Advanced options include:
 * change default dump path from RAILS_ROOT/tmp/backup to whatever
 * specify fully-qualified 'mysqldump' path
 * disable tar/gzipping of database dump
-* enable 'nice' with level specification to prevent backup_fu from bogarding your server
+* enable 'nice' with level specification to prevent backup_fu from bogarting your server
 
 Cronjob Installation
 ====================
@@ -142,4 +150,4 @@ The solution to this is to specify the absolute static path in config/backup_fu.
 
 
 
-Copyright (c) 2008 Shanti A. Braford, released under the MIT license
+Copyright (c) 2008 Shanti A. Braford, 2009 Bill Kirtley, released under the MIT license
