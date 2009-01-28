@@ -3,7 +3,7 @@ BackupFu
 
 The backup_fu plugin makes it redonkulously easy to:
 
- A) dump your database and/or static files to tar/gzipped archives, and
+ A) dump your database and/or static files to tar/gzipped or zipped archives, and
  B) upload these archives to a private Amazon S3 bucket for safekeeping
 
 Installation
@@ -60,7 +60,8 @@ Advanced options include:
 * specify static path(s) that should be backed up -- i.e. backup your entire 'public/static' directory
 * change default dump path from RAILS_ROOT/tmp/backup to whatever
 * specify fully-qualified 'mysqldump' path
-* disable tar/gzipping of database dump
+* disable compression of database dump
+* choose between zip or tar/gzip compression
 * enable 'nice' with level specification to prevent backup_fu from bogarding your server
 
 Cronjob Installation

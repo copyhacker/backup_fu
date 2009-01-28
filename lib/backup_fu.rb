@@ -61,7 +61,7 @@ class BackupFu
     if !@fu_conf[:static_paths]
       raise BackupFuConfigError, 'No static paths are defined in config/backup_fu.yml.  See README.'
     end
-    paths = @fu_conf[:static_paths].split(' ')´
+    paths = @fu_conf[:static_paths].split(' ')
     compress_static(paths)
   end
   
@@ -73,9 +73,8 @@ class BackupFu
     puts "\nBacking up Static files to S3: #{file}\n" if @verbose
     
     AWS::S3::S3Object.store(File.basename(file), open(file), @fu_conf[:s3_bucket], :access => :private)
-    
   end
-  
+
   def cleanup
     count = @fu_conf[:keep_backups].to_i
     backups = Dir.glob("#{dump_base_path}/*.{sql}")
@@ -83,14 +82,21 @@ class BackupFu
       puts "no old backups to cleanup"
     else
       puts "keeping #{count} of #{backups.length} backups"
-      
+
       files_to_remove = backups - backups.last(count)
-      files_to_remove = files_to_remove.concat(Dir.glob("#{dump_base_path}/*.{gz}")[0, files_to_remove.length]) unless @fu_conf[:disable_compression]
-      
+
+      if(!@fu_conf[:disable_compression])
+        if(@fu_conf[:compressor] == 'zip')
+          files_to_remove = files_to_remove.concat(Dir.glob("#{dump_base_path}/*.{zip}")[0, files_to_remove.length])
+        else
+          files_to_remove = files_to_remove.concat(Dir.glob("#{dump_base_path}/*.{gz}")[0, files_to_remove.length])
+        end
+      end
+
       files_to_remove.each do |f|
         File.delete(f)
       end
-      
+
     end
   end
   
@@ -135,30 +141,46 @@ class BackupFu
   def db_filename
     "#{@fu_conf[:app_name]}_#{ @timestamp }_db.sql"
   end
-  
+
   def db_filename_compressed
-    db_filename.gsub('.sql', '.tar')
+    if(@fu_conf[:compressor] == 'zip')
+      db_filename.gsub('.sql', '.zip')
+    else
+      db_filename.gsub('.sql', '.tar')
+    end
   end
-  
+
   def final_db_dump_path
-    if @fu_conf[:disable_compression]
+    if(@fu_conf[:disable_compression])
       filename = db_filename
     else
-      filename = db_filename.gsub('.sql', '.tar.gz')
+      if(@fu_conf[:compressor] == 'zip')
+        filename = db_filename.gsub('.sql', '.zip')
+      else
+        filename = db_filename.gsub('.sql', '.tar.gz')
+      end
     end
     File.join(dump_base_path, filename)
   end
-  
+
   def static_compressed_path
-    f = "#{@fu_conf[:app_name]}_#{ @timestamp }_static.tar"
+    if(@fu_conf[:compressor] == 'zip')
+      f = "#{@fu_conf[:app_name]}_#{ @timestamp }_static.zip"
+    else
+      f = "#{@fu_conf[:app_name]}_#{ @timestamp }_static.tar"
+    end
     File.join(dump_base_path, f)
   end
-  
+
   def final_static_dump_path
-    f = "#{@fu_conf[:app_name]}_#{ @timestamp }_static.tar.gz"
+    if(@fu_conf[:compressor] == 'zip')
+      f = "#{@fu_conf[:app_name]}_#{ @timestamp }_static.zip"
+    else
+      f = "#{@fu_conf[:app_name]}_#{ @timestamp }_static.tar.gz"
+    end
     File.join(dump_base_path, f)
   end
-  
+
   def create_dirs
     ensure_directory_exists(dump_base_path)
   end
@@ -180,17 +202,24 @@ class BackupFu
   end
   
   def compress_db(dump_base_path, db_filename)
-    tar_path = File.join(dump_base_path, db_filename_compressed)
+    compressed_path = File.join(dump_base_path, db_filename_compressed)
 
-    # TAR it up
-    cmd = niceify "tar -cf #{tar_path} -C #{dump_base_path} #{db_filename}"
-    puts "\nTar: #{cmd}\n" if @verbose
-    `#{cmd}`
+    if(@fu_conf[:compressor] == 'zip')
+      cmd = niceify "zip #{compressed_path} #{dump_base_path}/#{db_filename}"
+      puts "\nZip: #{cmd}\n" if @verbose
+      `#{cmd}`
+    else
 
-    # GZip it up
-    cmd = niceify "gzip -f #{tar_path}"
-    puts "\nGzip: #{cmd}" if @verbose
-    `#{cmd}`
+      # TAR it up
+      cmd = niceify "tar -cf #{compressed_path} -C #{dump_base_path} #{db_filename}"
+      puts "\nTar: #{cmd}\n" if @verbose
+      `#{cmd}`
+
+      # GZip it up
+      cmd = niceify "gzip -f #{compressed_path}"
+      puts "\nGzip: #{cmd}" if @verbose
+      `#{cmd}`
+    end
   end
 
   def compress_static(paths)
@@ -202,23 +231,30 @@ class BackupFu
       end
 
       puts "Static Path: #{p}" if @verbose
-      if path_num == 0
-        tar_switch = 'c'  # for create
+
+      if @fu_conf[:compressor] == 'zip'
+        cmd = niceify "zip -r #{static_compressed_path} #{p}"
+        puts "\nZip: #{cmd}\n" if @verbose
+        `#{cmd}`
       else
-        tar_switch = 'r'  # for append
+        if path_num == 0
+          tar_switch = 'c'  # for create
+        else
+          tar_switch = 'r'  # for append
+        end
+
+        # TAR
+        cmd = niceify "tar -#{tar_switch}f #{static_compressed_path} #{p}"
+        puts "\nTar: #{cmd}\n" if @verbose
+        `#{cmd}`
+
+        path_num += 1
+
+        # GZIP
+        cmd = niceify "gzip -f #{static_compressed_path}"
+        puts "\nGzip: #{cmd}" if @verbose
+        `#{cmd}`
       end
-
-      # TAR
-      cmd = niceify "tar -#{tar_switch}f #{static_compressed_path} #{p}"
-      puts "\nTar: #{cmd}\n" if @verbose
-      `#{cmd}`
-
-      path_num += 1
     end
-
-    # GZIP
-    cmd = niceify "gzip -f #{static_compressed_path}"
-    puts "\nGzip: #{cmd}" if @verbose
-    `#{cmd}`
   end
 end
