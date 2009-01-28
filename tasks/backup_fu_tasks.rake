@@ -70,7 +70,7 @@ namespace :backup_fu do
 
   namespace :static do
 
-    desc "Tars and gzips static application files locally.  Does *not* upload to S3."
+    desc "Zips or Tars and gzips static application files locally.  Does *not* upload to S3."
     task :dump do
       b = BackupFu.new
       b.dump_static

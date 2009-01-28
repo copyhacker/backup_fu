@@ -7,6 +7,14 @@ aws_secret_access_key: --replace me with your AWS secret access key--
 
 # Advanced customizations
 
+# Use dynamic bucket path  with erb
+s3_bucket: <%=  %>
+
+backup and compress all app files w/o log/* and tmp/* dirs
+[config sample]
+
+added support of sqlite
+
 # Turn on verbose output for debugging purposes:
 verbose: true
 
@@ -26,8 +34,16 @@ static_paths: "/u/apps/foo/current/public/static"
 # The default dump base path is 'tmp/backups'.  This can be changed with:
 dump_base_path: /tmp
 
-# To disable the tar/gzipping of the DB backup:
-disable_tar_gzip: true
+# To use tar-gzipping or zipping for compression. Use the values tar-gzip or zip here. Default is tar-gzip.
+compressor: tar-gzip
+
+# To disable compression of the DB backup:
+disable_compression: true
+
+# Password-protect zip files. The password will be omitted if empty.
+# This is a weak protection
+# Read the man page of zip for clearance of security
+zip_password: <your-password-here>
 
 # To turn on using 'nice' to keep backup CPU processing to a minimum:
 enable_nice: true
