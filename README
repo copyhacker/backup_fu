@@ -9,13 +9,13 @@ The backup_fu plugin makes it redonkulously easy to:
 Installation
 ============
 
-The 'aws-s3' gem is required for backup_fu to function properly.  Install with:
+The 'right_aws' gem is required for backup_fu to function properly.  Install with:
 
-  sudo gem install aws-s3
+  sudo gem install right_aws
 
 Install the plugin with:
 
-  script/plugin install git://github.com/gravelpup/backup_fu.git
+  script/plugin install git://github.com/bigcurl/backup_fu.git
 
 
 Configuration
