@@ -26,8 +26,8 @@ static_paths: "/u/apps/foo/current/public/static"
 # The default dump base path is 'tmp/backups'.  This can be changed with:
 dump_base_path: /tmp
 
-# To disable the tar/gzipping of the DB backup:
-disable_tar_gzip: true
+# To disable compression of the DB backup:
+disable_compression: true
 
 # To turn on using 'nice' to keep backup CPU processing to a minimum:
 enable_nice: true

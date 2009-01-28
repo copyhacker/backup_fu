@@ -41,21 +41,7 @@ class BackupFu
     puts cmd if @verbose
     `#{cmd}`
 
-    if !@fu_conf[:disable_tar_gzip]
-      
-      tar_path = File.join(dump_base_path, db_filename_tarred)
-
-      # TAR it up
-      cmd = niceify "tar -cf #{tar_path} -C #{dump_base_path} #{db_filename}"
-      puts "\nTar: #{cmd}\n" if @verbose
-      `#{cmd}`
-
-      # GZip it up
-      cmd = niceify "gzip -f #{tar_path}"
-      puts "\nGzip: #{cmd}" if @verbose
-      `#{cmd}`
-    end
-    
+    compress_db(dump_base_path, db_filename) if !@fu_conf[:disable_compression]
   end
   
   def backup
@@ -75,34 +61,8 @@ class BackupFu
     if !@fu_conf[:static_paths]
       raise BackupFuConfigError, 'No static paths are defined in config/backup_fu.yml.  See README.'
     end
-    @paths = @fu_conf[:static_paths].split(' ')
-    path_num = 0
-    @paths.each do |p|
-      if p.first != '/'
-        # Make into an Absolute path:
-        p = File.join(RAILS_ROOT, p)
-      end
-      
-      puts "Static Path: #{p}" if @verbose
-      if path_num == 0
-        tar_switch = 'c'  # for create
-      else
-        tar_switch = 'r'  # for append
-      end
-      
-      # TAR
-      cmd = niceify "tar -#{tar_switch}f #{static_tar_path} #{p}"
-      puts "\nTar: #{cmd}\n" if @verbose
-      `#{cmd}`
-      
-      path_num += 1
-    end
-
-    # GZIP
-    cmd = niceify "gzip -f #{static_tar_path}"
-    puts "\nGzip: #{cmd}" if @verbose
-    `#{cmd}`
-
+    paths = @fu_conf[:static_paths].split(' ')´
+    compress_static(paths)
   end
   
   def backup_static
@@ -125,7 +85,7 @@ class BackupFu
       puts "keeping #{count} of #{backups.length} backups"
       
       files_to_remove = backups - backups.last(count)
-      files_to_remove = files_to_remove.concat(Dir.glob("#{dump_base_path}/*.{gz}")[0, files_to_remove.length]) unless @fu_conf[:disable_tar_gzip]
+      files_to_remove = files_to_remove.concat(Dir.glob("#{dump_base_path}/*.{gz}")[0, files_to_remove.length]) unless @fu_conf[:disable_compression]
       
       files_to_remove.each do |f|
         File.delete(f)
@@ -176,12 +136,12 @@ class BackupFu
     "#{@fu_conf[:app_name]}_#{ @timestamp }_db.sql"
   end
   
-  def db_filename_tarred
+  def db_filename_compressed
     db_filename.gsub('.sql', '.tar')
   end
   
   def final_db_dump_path
-    if @fu_conf[:disable_tar_gzip]
+    if @fu_conf[:disable_compression]
       filename = db_filename
     else
       filename = db_filename.gsub('.sql', '.tar.gz')
@@ -189,7 +149,7 @@ class BackupFu
     File.join(dump_base_path, filename)
   end
   
-  def static_tar_path
+  def static_compressed_path
     f = "#{@fu_conf[:app_name]}_#{ @timestamp }_static.tar"
     File.join(dump_base_path, f)
   end
@@ -219,4 +179,46 @@ class BackupFu
     Time.now.strftime("%Y-%m-%d") + "_#{ Time.now.tv_sec }"
   end
   
+  def compress_db(dump_base_path, db_filename)
+    tar_path = File.join(dump_base_path, db_filename_compressed)
+
+    # TAR it up
+    cmd = niceify "tar -cf #{tar_path} -C #{dump_base_path} #{db_filename}"
+    puts "\nTar: #{cmd}\n" if @verbose
+    `#{cmd}`
+
+    # GZip it up
+    cmd = niceify "gzip -f #{tar_path}"
+    puts "\nGzip: #{cmd}" if @verbose
+    `#{cmd}`
+  end
+
+  def compress_static(paths)
+    path_num = 0
+    paths.each do |p|
+      if p.first != '/'
+        # Make into an Absolute path:
+        p = File.join(RAILS_ROOT, p)
+      end
+
+      puts "Static Path: #{p}" if @verbose
+      if path_num == 0
+        tar_switch = 'c'  # for create
+      else
+        tar_switch = 'r'  # for append
+      end
+
+      # TAR
+      cmd = niceify "tar -#{tar_switch}f #{static_compressed_path} #{p}"
+      puts "\nTar: #{cmd}\n" if @verbose
+      `#{cmd}`
+
+      path_num += 1
+    end
+
+    # GZIP
+    cmd = niceify "gzip -f #{static_compressed_path}"
+    puts "\nGzip: #{cmd}" if @verbose
+    `#{cmd}`
+  end
 end
