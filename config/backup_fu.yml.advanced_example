@@ -32,6 +32,11 @@ compressor: tar-gzip
 # To disable compression of the DB backup:
 disable_compression: true
 
+# Password-protect zip files. The password will be omitted if empty.
+# This is a weak protection
+# Read the man page of zip for clearance of security
+zip_password: <your-password-here>
+
 # To turn on using 'nice' to keep backup CPU processing to a minimum:
 enable_nice: true
 nice_level: 15
