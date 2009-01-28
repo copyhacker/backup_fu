@@ -80,9 +80,7 @@ class BackupFu
   end
   
   def list_backups
-    establish_s3_connection
-
-    AWS::S3::Bucket.objects(@fu_conf[:s3_bucket]).map{ |o| o.key }
+    s3_connection.bucket(@fu_conf[:s3_bucket]).keys.map(&:to_s)
   end
 
   # Don't count on being able to drop the database, but do expect to drop all tables
@@ -100,14 +98,12 @@ class BackupFu
   end
 
   def restore_backup(key)
-    establish_s3_connection
-
     restore_file_name = @fu_conf[:disable_tar_gzip] ? 'restore.sql' : 'restore.tar.gz'
     restore_file = Tempfile.new(restore_file_name)
     
     open(restore_file.path, 'w') do |fh|
       puts "Fetching #{key} to #{restore_file.path}"
-      AWS::S3::S3Object.stream(key, @fu_conf[:s3_bucket]) do |chunk|
+      s3_connection.bucket(@fu_conf[:s3_bucket]).get(key) do |chunk|
         fh.write chunk
       end
     end
@@ -198,6 +194,12 @@ class BackupFu
     key.put(nil, 'private')
   end
   
+  def s3_connection
+    @s3 ||= begin
+      RightAws::S3.new(@fu_conf[:aws_access_key_id], @fu_conf[:aws_secret_access_key])
+    end
+  end
+
   def check_conf
     @fu_conf[:s3_bucket] = ENV['s3_bucket'] unless ENV['s3_bucket'].blank?
     if @fu_conf[:app_name] == 'replace_me'
