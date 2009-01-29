@@ -20,7 +20,7 @@ The 'right_aws' gem is required for backup_fu to function properly.  Install wit
 
 Install the plugin with:
 
-  script/plugin install git://github.com/cluesque/backup_fu.git
+  script/plugin install git://github.com/gravelpup/backup_fu.git
 
 
 Configuration
