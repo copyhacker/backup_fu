@@ -5,5 +5,10 @@
 - Backup and restore for PostgreSQL (Bill Kirtley)
 
 ### BC (before changelog)
-
 Multiple Rails environments, Postgres, epoch timestamps, cleanup, and more!
+
+### TODOs
+- Implement restore for MySQL and zip compression
+- Clean up README (Markdown would be super)
+- DRY up backup_fu.rb
+- Specs, specs, specs
