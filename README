@@ -6,8 +6,7 @@ The backup_fu plugin makes it redonkulously easy to:
  A) dump your database and/or static files to tar/gzipped or zipped archives, and
  B) upload these archives to a private Amazon S3 bucket for safekeeping
 
-This fork of the project allows backup and restore of PostgreSQL databases,
-and is known to work on the Morph AppSpace platform.
+Allows restore of PostgreSQL databases.
 
 It also uses credentials in config/amazon_s3.yml if not supplied in backup_fu.yml
 
