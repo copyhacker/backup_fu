@@ -306,7 +306,7 @@ class BackupFu
     compressed_path = File.join(dump_base_path, db_filename_compressed)
 
     if(@fu_conf[:compressor] == 'zip')
-      cmd = niceify "zip #{zip_switch} #{compressed_path} #{dump_base_path}/#{db_filename}"
+      cmd = niceify "zip #{zip_switches} #{compressed_path} #{dump_base_path}/#{db_filename}"
       puts "\nZip: #{cmd}\n" if @verbose
       `#{cmd}`
     else
@@ -359,12 +359,16 @@ class BackupFu
     end
   end
 
-  def zip_switch
+
+  # Add -j option to keep from preserving directory structure
+  def zip_switches
     if(@fu_conf[:zip_password] && !@fu_conf[:zip_password].blank?)
-      "-P #{@fu_conf[:zip_password]}"
+      password_option = "-P #{@fu_conf[:zip_password]}"
     else
-      ''
+      password_option = ''
     end
+    
+    "-j #{password_option}"
   end
 
   def skips
