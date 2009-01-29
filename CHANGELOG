@@ -1,4 +1,5 @@
 ### January 29, 2009
+- Added bucket name to the list of keys pulled from amazon_s3.yml (Jonathan Vaught)
 - Uses RightAWS instead of AWS-S3 (Randy Schmidt)
 - ZIP compression with password option (Samuel Goebert)
 - Backup and restore for PostgreSQL (Bill Kirtley)
