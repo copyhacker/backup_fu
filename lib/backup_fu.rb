@@ -32,23 +32,28 @@ class BackupFu
   
   def sqlcmd_options
     host, port, password = '', '', ''
+
     if @db_conf.has_key?(:host) && @db_conf[:host] != 'localhost'
       host = "--host=#{@db_conf[:host]}"
     end
+
     if @db_conf.has_key?(:port)
       port = "--port=#{@db_conf[:port]}"
     end
-    if @db_conf.has_key?(:password) && !@db_conf[:password].blank? && @db_conf[:adapter] != 'postgresql'
-      password = "--password=#{@db_conf[:password]}"
-    end
-    unless @db_conf[:password].blank?
+
+    unless @db_conf[:username].blank?
       user = "--user=#{@db_conf[:username]}"
     end
+
+    if !@db_conf[:password].blank? && @db_conf[:adapter] != 'postgresql'
+      password = "--password=#{@db_conf[:password]}"
+    end
+
     "#{host} #{port} #{user} #{password}"
   end
 
   def pgpassword_prefix
-    if @db_conf.has_key?(:password) && !@db_conf[:password].blank? 
+    if !@db_conf[:password].blank? 
       "PGPASSWORD=#{@db_conf[:password]}"
     end
   end
