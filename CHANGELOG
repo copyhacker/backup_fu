@@ -1,0 +1,8 @@
+### January 29, 2009
+- Uses RightAWS instead of AWS-S3 (Randy Schmidt)
+- ZIP compression with password option (Samuel Goebert)
+- Backup and restore for PostgreSQL (Bill Kirtley)
+
+### BC (before changelog)
+
+Multiple Rails environments, Postgres, epoch timestamps, cleanup, and more!
