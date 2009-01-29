@@ -103,7 +103,10 @@ class BackupFu
   end
 
   def restore_backup(key)
-    restore_file_name = @fu_conf[:disable_tar_gzip] ? 'restore.sql' : 'restore.tar.gz'
+    raise "Restore not implemented for #{@db_conf[:adapter]}" unless @db_conf[:adapter] == 'postgresql'
+    raise 'Restore not implemented for zip' if @fu_conf[:compressor] == 'zip'
+    
+    restore_file_name = @fu_conf[:disable_compression] ? 'restore.sql' : 'restore.tar.gz'
     restore_file = Tempfile.new(restore_file_name)
     
     open(restore_file.path, 'w') do |fh|
@@ -113,7 +116,7 @@ class BackupFu
       end
     end
 
-    if(@fu_conf[:disable_tar_gzip])
+    if(@fu_conf[:disable_compression])
       restore_file_unpacked = restore_file
     else
       restore_file_unpacked = Tempfile.new('restore.sql')
@@ -126,7 +129,6 @@ class BackupFu
     prepare_db_for_restore
 
     # Do the actual restore
-    raise "restore unimplemented for #{adapter}" unless (adapter = @db_conf[:adapter]) == 'postgresql'
     case @db_conf[:adapter]
     when 'postgresql'
       cmd = niceify "export #{pgpassword_prefix} && #{restore_command_path} --clean #{sqlcmd_options} --dbname=#{@db_conf[:database]} #{restore_file_unpacked.path}"
